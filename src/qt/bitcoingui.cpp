@@ -54,8 +54,14 @@
 #include <QStyle>
 #include <QTimer>
 #include <QToolBar>
-#include <QUrlQuery>
 #include <QVBoxLayout>
+
+#if QT_VERSION < 0x050000
+#include <QTextDocument>
+#include <QUrl>
+#else
+#include <QUrlQuery>
+#endif
 
 const QString BitcoinGUI::DEFAULT_WALLET = "~Default";
 
@@ -87,7 +93,6 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
                                                                             multisigSignAction(0),
                                                                             aboutAction(0),
                                                                             receiveCoinsAction(0),
-                                                                            governanceAction(0),
                                                                             privacyAction(0),
                                                                             optionsAction(0),
                                                                             toggleHideAction(0),
@@ -112,7 +117,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
 
     GUIUtil::restoreWindowGeometry("nWindow", QSize(850, 550), this);
 
-    QString windowTitle = tr("PIVX Core") + " - ";
+    QString windowTitle = tr("GoodCoin Core") + " - ";
 #ifdef ENABLE_WALLET
     /* if compiled with wallet support, -disablewallet can still disable the wallet */
     enableWallet = !GetBoolArg("-disablewallet", false);
@@ -134,6 +139,12 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
     MacDockIconHandler::instance()->setIcon(networkStyle->getAppIcon());
 #endif
     setWindowTitle(windowTitle);
+
+#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+    // This property is not implemented in Qt 5. Setting it has no effect.
+    // A replacement API (QtMacUnifiedToolBar) is available in QtMacExtras.
+    setUnifiedTitleAndToolBarOnMac(true);
+#endif
 
     rpcConsole = new RPCConsole(enableWallet ? this : 0);
 #ifdef ENABLE_WALLET
@@ -224,7 +235,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
 
     // Override style sheet for progress bar for styles that have a segmented progress bar,
     // as they make the text unreadable (workaround for issue #1071)
-    // See https://doc.qt.io/qt-5/gallery.html
+    // See https://qt-project.org/doc/qt-4.8/gallery.html
     QString curStyle = QApplication::style()->metaObject()->className();
     if (curStyle == "QWindowsStyle" || curStyle == "QWindowsXPStyle") {
         progressBar->setStyleSheet("QProgressBar { background-color: #F8F8F8; border: 1px solid grey; border-radius: 7px; padding: 1px; text-align: center; } QProgressBar::chunk { background: QLinearGradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #00CCFF, stop: 1 #33CCFF); border-radius: 7px; margin: 0px; }");
@@ -308,7 +319,7 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     tabGroup->addAction(overviewAction);
 
     sendCoinsAction = new QAction(QIcon(":/icons/send"), tr("&Send"), this);
-    sendCoinsAction->setStatusTip(tr("Send coins to a PIVX address"));
+    sendCoinsAction->setStatusTip(tr("Send coins to a GoodCoin address"));
     sendCoinsAction->setToolTip(sendCoinsAction->statusTip());
     sendCoinsAction->setCheckable(true);
 #ifdef Q_OS_MAC
@@ -319,7 +330,7 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     tabGroup->addAction(sendCoinsAction);
 
     receiveCoinsAction = new QAction(QIcon(":/icons/receiving_addresses"), tr("&Receive"), this);
-    receiveCoinsAction->setStatusTip(tr("Request payments (generates QR codes and pivx: URIs)"));
+    receiveCoinsAction->setStatusTip(tr("Request payments (generates QR codes and goodcoin: URIs)"));
     receiveCoinsAction->setToolTip(receiveCoinsAction->statusTip());
     receiveCoinsAction->setCheckable(true);
 #ifdef Q_OS_MAC
@@ -341,7 +352,7 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     tabGroup->addAction(historyAction);
 
     privacyAction = new QAction(QIcon(":/icons/privacy"), tr("&Privacy"), this);
-    privacyAction->setStatusTip(tr("Privacy Actions for zPIV"));
+    privacyAction->setStatusTip(tr("Privacy Actions for zGDC"));
     privacyAction->setToolTip(privacyAction->statusTip());
     privacyAction->setCheckable(true);
 #ifdef Q_OS_MAC
@@ -369,17 +380,6 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
         connect(masternodeAction, SIGNAL(triggered()), this, SLOT(gotoMasternodePage()));
     }
 
-    governanceAction = new QAction(QIcon(":/icons/governance"), tr("&Governance"), this);
-    governanceAction->setStatusTip(tr("Show Proposals"));
-    governanceAction->setToolTip(governanceAction->statusTip());
-    governanceAction->setCheckable(true);
-#ifdef Q_OS_MAC
-    governanceAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_7));
-#else
-    governanceAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_7));
-#endif
-    tabGroup->addAction(governanceAction);
-
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -392,21 +392,24 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     connect(privacyAction, SIGNAL(triggered()), this, SLOT(gotoPrivacyPage()));
     connect(historyAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
-    connect(governanceAction, SIGNAL(triggered()), this, SLOT(gotoGovernancePage()));
 #endif // ENABLE_WALLET
 
     quitAction = new QAction(QIcon(":/icons/quit"), tr("E&xit"), this);
     quitAction->setStatusTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
-    aboutAction = new QAction(networkStyle->getAppIcon(), tr("&About PIVX Core"), this);
-    aboutAction->setStatusTip(tr("Show information about PIVX Core"));
+    aboutAction = new QAction(networkStyle->getAppIcon(), tr("&About GoodCoin Core"), this);
+    aboutAction->setStatusTip(tr("Show information about GoodCoin Core"));
     aboutAction->setMenuRole(QAction::AboutRole);
+#if QT_VERSION < 0x050000
+    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+#else
     aboutQtAction = new QAction(QIcon(":/qt-project.org/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+#endif
     aboutQtAction->setStatusTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
-    optionsAction->setStatusTip(tr("Modify configuration options for PIVX"));
+    optionsAction->setStatusTip(tr("Modify configuration options for GoodCoin"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
     toggleHideAction = new QAction(networkStyle->getAppIcon(), tr("&Show / Hide"), this);
     toggleHideAction->setStatusTip(tr("Show or hide the main Window"));
@@ -422,9 +425,9 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     unlockWalletAction->setToolTip(tr("Unlock wallet"));
     lockWalletAction = new QAction(tr("&Lock Wallet"), this);
     signMessageAction = new QAction(QIcon(":/icons/edit"), tr("Sign &message..."), this);
-    signMessageAction->setStatusTip(tr("Sign messages with your PIVX addresses to prove you own them"));
+    signMessageAction->setStatusTip(tr("Sign messages with your GoodCoin addresses to prove you own them"));
     verifyMessageAction = new QAction(QIcon(":/icons/transaction_0"), tr("&Verify message..."), this);
-    verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified PIVX addresses"));
+    verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified GoodCoin addresses"));
     bip38ToolAction = new QAction(QIcon(":/icons/key"), tr("&BIP38 tool"), this);
     bip38ToolAction->setToolTip(tr("Encrypt and decrypt private keys using a passphrase"));
     multiSendAction = new QAction(QIcon(":/icons/edit"), tr("&MultiSend"), this);
@@ -461,13 +464,13 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     multisigSignAction->setStatusTip(tr("Sign with a multisignature address"));
 
     openAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_FileIcon), tr("Open &URI..."), this);
-    openAction->setStatusTip(tr("Open a PIVX: URI or payment request"));
+    openAction->setStatusTip(tr("Open a GoodCoin: URI or payment request"));
     openBlockExplorerAction = new QAction(QIcon(":/icons/explorer"), tr("&Blockchain explorer"), this);
     openBlockExplorerAction->setStatusTip(tr("Block explorer window"));
 
     showHelpMessageAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Command-line options"), this);
     showHelpMessageAction->setMenuRole(QAction::NoRole);
-    showHelpMessageAction->setStatusTip(tr("Show the PIVX Core help message to get a list with possible PIVX command-line options"));
+    showHelpMessageAction->setStatusTip(tr("Show the GoodCoin Core help message to get a list with possible GoodCoin command-line options"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
@@ -578,7 +581,6 @@ void BitcoinGUI::createToolBars()
         if (settings.value("fShowMasternodesTab").toBool()) {
             toolbar->addAction(masternodeAction);
         }
-        toolbar->addAction(governanceAction);
         toolbar->setMovable(false); // remove unused icon in upper left corner
         toolbar->setOrientation(Qt::Vertical);
         toolbar->setIconSize(QSize(40,40));
@@ -701,7 +703,7 @@ void BitcoinGUI::createTrayIcon(const NetworkStyle* networkStyle)
 {
 #ifndef Q_OS_MAC
     trayIcon = new QSystemTrayIcon(this);
-    QString toolTip = tr("PIVX Core client") + " " + networkStyle->getTitleAddText();
+    QString toolTip = tr("GoodCoin Core client") + " " + networkStyle->getTitleAddText();
     trayIcon->setToolTip(toolTip);
     trayIcon->setIcon(networkStyle->getAppIcon());
     trayIcon->hide();
@@ -775,7 +777,6 @@ void BitcoinGUI::optionsClicked()
 
     OptionsDialog dlg(this, enableWallet);
     dlg.setModel(clientModel->getOptionsModel());
-    dlg.setCurrentIndex(0);
     dlg.exec();
 }
 
@@ -823,12 +824,6 @@ void BitcoinGUI::gotoMasternodePage()
         masternodeAction->setChecked(true);
         if (walletFrame) walletFrame->gotoMasternodePage();
     }
-}
-
-void BitcoinGUI::gotoGovernancePage()
-{
-    governanceAction->setChecked(true);
-    if (walletFrame) walletFrame->gotoGovernancePage();
 }
 
 void BitcoinGUI::gotoReceiveCoinsPage()
@@ -920,7 +915,7 @@ void BitcoinGUI::setNumConnections(int count)
     }
     QIcon connectionItem = QIcon(icon).pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE);
     labelConnectionsIcon->setIcon(connectionItem);
-    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to PIVX network", "", count));
+    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to GoodCoin network", "", count));
 }
 
 void BitcoinGUI::setNumBlocks(int count)
@@ -1050,7 +1045,7 @@ void BitcoinGUI::setNumBlocks(int count)
 
 void BitcoinGUI::message(const QString& title, const QString& message, unsigned int style, bool* ret)
 {
-    QString strTitle = tr("PIVX Core"); // default title
+    QString strTitle = tr("GoodCoin Core"); // default title
     // Default to information icon
     int nMBoxIcon = QMessageBox::Information;
     int nNotifyIcon = Notificator::Information;
@@ -1075,7 +1070,7 @@ void BitcoinGUI::message(const QString& title, const QString& message, unsigned 
             break;
         }
     }
-    // Append title to "PIVX - "
+    // Append title to "GoodCoin - "
     if (!msgType.isEmpty())
         strTitle += " - " + msgType;
 
@@ -1185,39 +1180,30 @@ bool BitcoinGUI::eventFilter(QObject* object, QEvent* event)
 #ifdef ENABLE_WALLET
 void BitcoinGUI::setStakingStatus()
 {
-    if (walletFrame) {
-        if (pwalletMain)
-            fMultiSend = pwalletMain->isMultiSendEnabled();
+    if (pwalletMain)
+        fMultiSend = pwalletMain->isMultiSendEnabled();
 
-        if (nLastCoinStakeSearchInterval) {
-            labelStakingIcon->show();
-            labelStakingIcon->setPixmap(QIcon(":/icons/staking_active").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
-            labelStakingIcon->setToolTip(
-                    tr("Staking is active\n MultiSend: %1").arg(fMultiSend ? tr("Active") : tr("Not Active")));
-        } else {
-            labelStakingIcon->show();
-            labelStakingIcon->setPixmap(
-                    QIcon(":/icons/staking_inactive").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
-            labelStakingIcon->setToolTip(
-                    tr("Staking is not active\n MultiSend: %1").arg(fMultiSend ? tr("Active") : tr("Not Active")));
-        }
+    if (nLastCoinStakeSearchInterval) {
+        labelStakingIcon->show();
+        labelStakingIcon->setPixmap(QIcon(":/icons/staking_active").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        labelStakingIcon->setToolTip(tr("Staking is active\n MultiSend: %1").arg(fMultiSend ? tr("Active") : tr("Not Active")));
+    } else {
+        labelStakingIcon->show();
+        labelStakingIcon->setPixmap(QIcon(":/icons/staking_inactive").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        labelStakingIcon->setToolTip(tr("Staking is not active\n MultiSend: %1").arg(fMultiSend ? tr("Active") : tr("Not Active")));
     }
 }
 
 void BitcoinGUI::setAutoMintStatus()
 {
-    if (walletFrame) {
-        if (fEnableZeromint) {
-            labelAutoMintIcon->show();
-            labelAutoMintIcon->setIcon(QIcon(":/icons/automint_active").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
-            labelAutoMintIcon->setToolTip(
-                    tr("AutoMint is currently enabled and set to ") + QString::number(nZeromintPercentage) + "%.\n");
-        } else {
-            labelAutoMintIcon->show();
-            labelAutoMintIcon->setIcon(
-                    QIcon(":/icons/automint_inactive").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
-            labelAutoMintIcon->setToolTip(tr("AutoMint is disabled"));
-        }
+    if (fEnableZeromint) {
+        labelAutoMintIcon->show();
+        labelAutoMintIcon->setIcon(QIcon(":/icons/automint_active").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        labelAutoMintIcon->setToolTip(tr("AutoMint is currently enabled and set to ") + QString::number(nZeromintPercentage) + "%.\n");
+    } else {
+        labelAutoMintIcon->show();
+        labelAutoMintIcon->setIcon(QIcon(":/icons/automint_inactive").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        labelAutoMintIcon->setToolTip(tr("AutoMint is disabled"));
     }
 }
 

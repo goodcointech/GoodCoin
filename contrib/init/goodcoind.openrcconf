@@ -1,0 +1,26 @@
+# /etc/conf.d/goodcoind: config file for /etc/init.d/goodcoind
+
+# Config file location
+#BITCOIND_CONFIGFILE="/etc/goodcoin/goodcoin.conf"
+
+# What directory to write pidfile to?  (created and owned by $BITCOIND_USER)
+#BITCOIND_PIDDIR="/var/run/goodcoind"
+
+# What filename to give the pidfile
+#BITCOIND_PIDFILE="${BITCOIND_PIDDIR}/goodcoind.pid"
+
+# Where to write goodcoind data (be mindful that the blockchain is large)
+#BITCOIND_DATADIR="/var/lib/goodcoind"
+
+# User and group to own goodcoind process
+#BITCOIND_USER="goodcoin"
+#BITCOIND_GROUP="goodcoin"
+
+# Path to goodcoind executable
+#BITCOIND_BIN="/usr/bin/goodcoind"
+
+# Nice value to run goodcoind under
+#BITCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+BITCOIND_OPTS=""

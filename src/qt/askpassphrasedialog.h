@@ -38,13 +38,12 @@ public:
         Encrypt,        /** Encrypt unencrypted wallet */
         ToggleLock,     /** Toggle wallet lock state */
         ChangePass,     /** Change passphrase */
-        Send_PIV,       /** Send PIV */
-        Send_zPIV,      /** Send zPIV */
-        Mint_zPIV,      /** Mint zPIV */
+        Send_GDC,       /** Send GDC */
+        Send_zGDC,      /** Send zGDC */
+        Mint_zGDC,      /** Mint zGDC */
         BIP_38,         /** BIP38 menu */
         Multi_Sig,      /** Multi-Signature dialog */
-        Sign_Message,   /** Sign/verify message dialog */
-        UI_Vote,        /** Governance Tab UI Voting */
+        Sign_Message    /** Sign/verify message dialog */
     };
 
     explicit AskPassphraseDialog(Mode mode, QWidget* parent, WalletModel* model, Context context);

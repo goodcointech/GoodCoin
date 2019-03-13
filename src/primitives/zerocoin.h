@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef PIVX_ZEROCOIN_H
-#define PIVX_ZEROCOIN_H
+#ifndef GoodCoin_ZEROCOIN_H
+#define GoodCoin_ZEROCOIN_H
 
 #include <amount.h>
 #include <limits.h>
@@ -25,7 +25,6 @@ struct CMintMeta
     bool isUsed;
     bool isArchived;
     bool isDeterministic;
-    bool isSeedCorrect;
 
     bool operator <(const CMintMeta& a) const;
 };
@@ -248,4 +247,4 @@ public:
     int GetNeededSpends();
 };
 
-#endif //PIVX_ZEROCOIN_H
+#endif //GoodCoin_ZEROCOIN_H

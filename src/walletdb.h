@@ -14,7 +14,7 @@
 #include "primitives/zerocoin.h"
 #include "libzerocoin/Accumulator.h"
 #include "libzerocoin/Denominations.h"
-#include "zpivtracker.h"
+#include "zgdctracker.h"
 
 #include <list>
 #include <stdint.h>
@@ -24,7 +24,6 @@
 
 class CAccount;
 class CAccountingEntry;
-class CBitcoinAddress;
 struct CBlockLocator;
 class CKeyPool;
 class CMasterKey;
@@ -102,9 +101,6 @@ public:
     bool WriteCryptedKey(const CPubKey& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, const CKeyMetadata& keyMeta);
     bool WriteMasterKey(unsigned int nID, const CMasterKey& kMasterKey);
 
-    bool WriteAutoConvertKey(const CBitcoinAddress& btcAddress);
-    void LoadAutoConvertKeys(std::set<CBitcoinAddress>& setAddresses);
-
     bool WriteCScript(const uint160& hash, const CScript& redeemScript);
 
     bool WriteWatchOnly(const CScript& script);
@@ -179,14 +175,14 @@ public:
     bool ReadZerocoinSpendSerialEntry(const CBigNum& bnSerial);
     bool WriteCurrentSeedHash(const uint256& hashSeed);
     bool ReadCurrentSeedHash(uint256& hashSeed);
-    bool WriteZPIVSeed(const uint256& hashSeed, const vector<unsigned char>& seed);
-    bool ReadZPIVSeed(const uint256& hashSeed, vector<unsigned char>& seed);
-    bool ReadZPIVSeed_deprecated(uint256& seed);
-    bool EraseZPIVSeed();
-    bool EraseZPIVSeed_deprecated();
+    bool WriteZGDCSeed(const uint256& hashSeed, const vector<unsigned char>& seed);
+    bool ReadZGDCSeed(const uint256& hashSeed, vector<unsigned char>& seed);
+    bool ReadZGDCSeed_deprecated(uint256& seed);
+    bool EraseZGDCSeed();
+    bool EraseZGDCSeed_deprecated();
 
-    bool WriteZPIVCount(const uint32_t& nCount);
-    bool ReadZPIVCount(uint32_t& nCount);
+    bool WriteZGDCCount(const uint32_t& nCount);
+    bool ReadZGDCCount(uint32_t& nCount);
     std::map<uint256, std::vector<pair<uint256, uint32_t> > > MapMintPool();
     bool WriteMintPoolPair(const uint256& hashMasterSeed, const uint256& hashPubcoin, const uint32_t& nCount);
 

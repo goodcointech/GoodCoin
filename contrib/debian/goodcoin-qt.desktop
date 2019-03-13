@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=GoodCoin
+Comment=GoodCoin P2P Cryptocurrency
+Comment[fr]=GoodCoin, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=GoodCoin, eşten eşe kriptografik sanal para birimi
+Exec=goodcoin-qt %u
+Terminal=false
+Type=Application
+Icon=goodcoin128
+MimeType=x-scheme-handler/goodcoin;
+Categories=Office;Finance;

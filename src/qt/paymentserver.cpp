@@ -18,6 +18,7 @@
 
 #include <cstdlib>
 
+#include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 
 #include <QApplication>
@@ -40,20 +41,25 @@
 #include <QSslSocket>
 #include <QStringList>
 #include <QTextDocument>
+
+#if QT_VERSION < 0x050000
+#include <QUrl>
+#else
 #include <QUrlQuery>
+#endif
 
 using namespace boost;
 using namespace std;
 
 const int BITCOIN_IPC_CONNECT_TIMEOUT = 1000; // milliseconds
-const QString BITCOIN_IPC_PREFIX("pivx:");
+const QString BITCOIN_IPC_PREFIX("goodcoin:");
 // BIP70 payment protocol messages
 const char* BIP70_MESSAGE_PAYMENTACK = "PaymentACK";
 const char* BIP70_MESSAGE_PAYMENTREQUEST = "PaymentRequest";
 // BIP71 payment protocol media types
-const char* BIP71_MIMETYPE_PAYMENT = "application/pivx-payment";
-const char* BIP71_MIMETYPE_PAYMENTACK = "application/pivx-paymentack";
-const char* BIP71_MIMETYPE_PAYMENTREQUEST = "application/pivx-paymentrequest";
+const char* BIP71_MIMETYPE_PAYMENT = "application/goodcoin-payment";
+const char* BIP71_MIMETYPE_PAYMENTACK = "application/goodcoin-paymentack";
+const char* BIP71_MIMETYPE_PAYMENTREQUEST = "application/goodcoin-paymentrequest";
 // BIP70 max payment request size in bytes (DoS protection)
 const qint64 BIP70_MAX_PAYMENTREQUEST_SIZE = 50000;
 
@@ -80,7 +86,7 @@ namespace // Anon namespace
 //
 static QString ipcServerName()
 {
-    QString name("PIVXQt");
+    QString name("GoodCoinQt");
 
     // Append a simple hash of the datadir
     // Note that GetDataDir(true) returns a different path
@@ -100,7 +106,7 @@ static QList<QString> savedPaymentRequests;
 
 static void ReportInvalidCertificate(const QSslCertificate& cert)
 {
-    qDebug() << QString("%1: Payment server found an invalid certificate: ").arg(__func__) << cert.serialNumber() << cert.subjectInfo(QSslCertificate::CommonName) << cert.subjectInfo(QSslCertificate::DistinguishedNameQualifier) << cert.subjectInfo(QSslCertificate::OrganizationalUnitName);
+    qDebug() << "ReportInvalidCertificate : Payment server found an invalid certificate: " << cert.subjectInfo(QSslCertificate::CommonName);
 }
 
 //
@@ -140,12 +146,12 @@ void PaymentServer::LoadRootCAs(X509_STORE* _store)
             ReportInvalidCertificate(cert);
             continue;
         }
-
-        // Blacklisted certificate
+#if QT_VERSION >= 0x050000
         if (cert.isBlacklisted()) {
             ReportInvalidCertificate(cert);
             continue;
         }
+#endif
         QByteArray certData = cert.toDer();
         const unsigned char* data = (const unsigned char*)certData.data();
 
@@ -187,11 +193,11 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
         if (arg.startsWith("-"))
             continue;
 
-        // If the pivx: URI contains a payment request, we are not able to detect the
+        // If the goodcoin: URI contains a payment request, we are not able to detect the
         // network as that would require fetching and parsing the payment request.
         // That means clicking such an URI which contains a testnet payment request
         // will start a mainnet instance and throw a "wrong network" error.
-        if (arg.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // pivx: URI
+        if (arg.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // goodcoin: URI
         {
             savedPaymentRequests.append(arg);
 
@@ -273,7 +279,7 @@ PaymentServer::PaymentServer(QObject* parent, bool startLocalServer) : QObject(p
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     // Install global event filter to catch QFileOpenEvents
-    // on Mac: sent when you click pivx: links
+    // on Mac: sent when you click goodcoin: links
     // other OSes: helpful when dealing with payment request files (in the future)
     if (parent)
         parent->installEventFilter(this);
@@ -289,7 +295,7 @@ PaymentServer::PaymentServer(QObject* parent, bool startLocalServer) : QObject(p
         if (!uriServer->listen(name)) {
             // constructor is called early in init, so don't use "emit message()" here
             QMessageBox::critical(0, tr("Payment request error"),
-                tr("Cannot start pivx: click-to-pay handler"));
+                tr("Cannot start goodcoin: click-to-pay handler"));
         } else {
             connect(uriServer, SIGNAL(newConnection()), this, SLOT(handleURIConnection()));
             connect(this, SIGNAL(receivedPaymentACK(QString)), this, SLOT(handlePaymentACK(QString)));
@@ -303,12 +309,12 @@ PaymentServer::~PaymentServer()
 }
 
 //
-// OSX-specific way of handling pivx: URIs and
+// OSX-specific way of handling goodcoin: URIs and
 // PaymentRequest mime types
 //
 bool PaymentServer::eventFilter(QObject* object, QEvent* event)
 {
-    // clicking on pivx: URIs creates FileOpen events on the Mac
+    // clicking on goodcoin: URIs creates FileOpen events on the Mac
     if (event->type() == QEvent::FileOpen) {
         QFileOpenEvent* fileEvent = static_cast<QFileOpenEvent*>(event);
         if (!fileEvent->file().isEmpty())
@@ -329,7 +335,7 @@ void PaymentServer::initNetManager()
     if (netManager != NULL)
         delete netManager;
 
-    // netManager is used to fetch paymentrequests given in pivx: URIs
+    // netManager is used to fetch paymentrequests given in goodcoin: URIs
     netManager = new QNetworkAccessManager(this);
 
     QNetworkProxy proxy;
@@ -366,9 +372,13 @@ void PaymentServer::handleURIOrFile(const QString& s)
         return;
     }
 
-    if (s.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // pivx: URI
+    if (s.startsWith(BITCOIN_IPC_PREFIX, Qt::CaseInsensitive)) // goodcoin: URI
     {
+#if QT_VERSION < 0x050000
+        QUrl uri(s);
+#else
         QUrlQuery uri((QUrl(s)));
+#endif
         if (uri.hasQueryItem("r")) // payment request URI
         {
             QByteArray temp;
@@ -399,7 +409,7 @@ void PaymentServer::handleURIOrFile(const QString& s)
                     emit receivedPaymentRequest(recipient);
             } else
                 emit message(tr("URI handling"),
-                    tr("URI cannot be parsed! This can be caused by an invalid PIVX address or malformed URI parameters."),
+                    tr("URI cannot be parsed! This can be caused by an invalid GoodCoin address or malformed URI parameters."),
                     CClientUIInterface::ICON_WARNING);
 
             return;
@@ -514,7 +524,7 @@ bool PaymentServer::processPaymentRequest(PaymentRequestPlus& request, SendCoins
             // Append destination address
             addresses.append(QString::fromStdString(CBitcoinAddress(dest).ToString()));
         } else if (!recipient.authenticatedMerchant.isEmpty()) {
-            // Insecure payments to custom pivx addresses are not supported
+            // Insecure payments to custom goodcoin addresses are not supported
             // (there is no good way to tell the user where they are paying in a way
             // they'd have a chance of understanding).
             emit message(tr("Payment request rejected"),

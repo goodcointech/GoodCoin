@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <boost/assign/list_of.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "db.h"
 #include "kernel.h"
@@ -11,7 +12,7 @@
 #include "timedata.h"
 #include "util.h"
 #include "stakeinput.h"
-#include "zpivchain.h"
+#include "zgdcchain.h"
 
 using namespace std;
 
@@ -169,7 +170,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         return error("ComputeNextStakeModifier: unable to get last modifier");
 
     if (GetBoolArg("-printstakemodifier", false))
-        LogPrintf("ComputeNextStakeModifier: prev modifier= %s time=%s\n", std::to_string(nStakeModifier).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nModifierTime).c_str());
+        LogPrintf("ComputeNextStakeModifier: prev modifier= %s time=%s\n", boost::lexical_cast<std::string>(nStakeModifier).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nModifierTime).c_str());
 
     if (nModifierTime / getIntervalVersion(fTestNet) >= pindexPrev->GetBlockTime() / getIntervalVersion(fTestNet))
         return true;
@@ -232,7 +233,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         LogPrintf("ComputeNextStakeModifier: selection height [%d, %d] map %s\n", nHeightFirstCandidate, pindexPrev->nHeight, strSelectionMap.c_str());
     }
     if (GetBoolArg("-printstakemodifier", false)) {
-        LogPrintf("ComputeNextStakeModifier: new modifier=%s time=%s\n", std::to_string(nStakeModifierNew).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexPrev->GetBlockTime()).c_str());
+        LogPrintf("ComputeNextStakeModifier: new modifier=%s time=%s\n", boost::lexical_cast<std::string>(nStakeModifierNew).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexPrev->GetBlockTime()).c_str());
     }
 
     nStakeModifier = nStakeModifierNew;
@@ -250,11 +251,6 @@ bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int
     const CBlockIndex* pindexFrom = mapBlockIndex[hashBlockFrom];
     nStakeModifierHeight = pindexFrom->nHeight;
     nStakeModifierTime = pindexFrom->GetBlockTime();
-    // Fixed stake modifier only for regtest
-    if (Params().NetworkID() == CBaseChainParams::REGTEST) {
-        nStakeModifier = pindexFrom->nStakeModifier;
-        return true;
-    }
     int64_t nStakeModifierSelectionInterval = GetStakeModifierSelectionInterval();
     const CBlockIndex* pindex = pindexFrom;
     CBlockIndex* pindexNext = chainActive[pindexFrom->nHeight + 1];
@@ -300,15 +296,12 @@ bool CheckStake(const CDataStream& ssUniqueID, CAmount nValueIn, const uint64_t 
 
 bool Stake(CStakeInput* stakeInput, unsigned int nBits, unsigned int nTimeBlockFrom, unsigned int& nTimeTx, uint256& hashProofOfStake)
 {
-    if(Params().NetworkID() != CBaseChainParams::REGTEST) {
-        if (nTimeTx < nTimeBlockFrom)
-            return error("CheckStakeKernelHash() : nTime violation");
+    if (nTimeTx < nTimeBlockFrom)
+        return error("CheckStakeKernelHash() : nTime violation");
 
-        if ((nTimeBlockFrom + nStakeMinAge > nTimeTx)) // Min age requirement
-            return error("CheckStakeKernelHash() : min age violation - nTimeBlockFrom=%d nStakeMinAge=%d nTimeTx=%d",
-                         nTimeBlockFrom, nStakeMinAge, nTimeTx);
-
-    }
+    if (nTimeBlockFrom + nStakeMinAge > nTimeTx) // Min age requirement
+        return error("CheckStakeKernelHash() : min age violation - nTimeBlockFrom=%d nStakeMinAge=%d nTimeTx=%d",
+                     nTimeBlockFrom, nStakeMinAge, nTimeTx);
 
     //grab difficulty
     uint256 bnTargetPerCoinDay;
@@ -377,9 +370,9 @@ bool CheckProofOfStake(const CBlock block, uint256& hashProofOfStake, std::uniqu
         if (!VerifyScript(txin.scriptSig, txPrev.vout[txin.prevout.n].scriptPubKey, STANDARD_SCRIPT_VERIFY_FLAGS, TransactionSignatureChecker(&tx, 0)))
             return error("CheckProofOfStake() : VerifySignature failed on coinstake %s", tx.GetHash().ToString().c_str());
 
-        CPivStake* pivInput = new CPivStake();
-        pivInput->SetInput(txPrev, txin.prevout.n);
-        stake = std::unique_ptr<CStakeInput>(pivInput);
+        CPivStake* gdcInput = new CPivStake();
+        gdcInput->SetInput(txPrev, txin.prevout.n);
+        stake = std::unique_ptr<CStakeInput>(gdcInput);
     }
 
     CBlockIndex* pindex = stake->GetIndexFrom();

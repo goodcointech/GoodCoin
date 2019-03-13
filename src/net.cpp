@@ -6,7 +6,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h"
+#include "config/goodcoin-config.h"
 #endif
 
 #include "net.h"
@@ -19,10 +19,7 @@
 #include "primitives/transaction.h"
 #include "scheduler.h"
 #include "ui_interface.h"
-
-#ifdef ENABLE_WALLET
 #include "wallet.h"
-#endif // ENABLE_WALLET
 
 #ifdef WIN32
 #include <string.h>
@@ -88,7 +85,6 @@ static std::vector<ListenSocket> vhListenSocket;
 CAddrMan addrman;
 int nMaxConnections = 125;
 bool fAddressesInitialized = false;
-std::string strSubVersion;
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
@@ -413,7 +409,7 @@ CNode* ConnectNode(CAddress addrConnect, const char* pszDest, bool obfuScationMa
         pszDest ? 0.0 : (double)(GetAdjustedTime() - addrConnect.nTime) / 3600.0);
 
     // Connect
-    SOCKET hSocket = INVALID_SOCKET;;
+    SOCKET hSocket;
     bool proxyConnectionFailed = false;
     if (pszDest ? ConnectSocketByName(addrConnect, hSocket, pszDest, Params().GetDefaultPort(), nConnectTimeout, &proxyConnectionFailed) :
                   ConnectSocket(addrConnect, hSocket, nConnectTimeout, &proxyConnectionFailed)) {
@@ -487,7 +483,7 @@ void CNode::PushVersion()
     else
         LogPrint("net", "send version message: version %d, blocks=%d, us=%s, peer=%d\n", PROTOCOL_VERSION, nBestHeight, addrMe.ToString(), id);
     PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
-        nLocalHostNonce, strSubVersion, nBestHeight, true);
+        nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight, true);
 }
 
 
@@ -699,7 +695,7 @@ void CNode::copyStats(CNodeStats& stats)
         nPingUsecWait = GetTimeMicros() - nPingUsecStart;
     }
 
-    // Raw ping time is in microseconds, but show it to user as whole seconds (PIVX users should be well used to small numbers with many decimal places by now :)
+    // Raw ping time is in microseconds, but show it to user as whole seconds (GoodCoin users should be well used to small numbers with many decimal places by now :)
     stats.dPingTime = (((double)nPingUsecTime) / 1e6);
     stats.dPingWait = (((double)nPingUsecWait) / 1e6);
 
@@ -1161,7 +1157,7 @@ void ThreadMapPort()
             }
         }
 
-        string strDesc = "PIVX " + FormatFullVersion();
+        string strDesc = "GoodCoin " + FormatFullVersion();
 
         try {
             while (true) {
@@ -1365,7 +1361,7 @@ void ThreadOpenConnections()
 
         int nTries = 0;
         while (true) {
-            CAddrInfo addr = addrman.Select();
+            CAddress addr = addrman.Select();
 
             // if we selected an invalid address, restart
             if (!addr.IsValid() || setConnected.count(addr.GetGroup()) || IsLocal(addr))
@@ -1559,7 +1555,6 @@ void ThreadMessageHandler()
     }
 }
 
-#ifdef ENABLE_WALLET
 // ppcoin: stake minter thread
 void static ThreadStakeMinter()
 {
@@ -1576,7 +1571,6 @@ void static ThreadStakeMinter()
     }
     LogPrintf("ThreadStakeMinter exiting,\n");
 }
-#endif // ENABLE_WALLET
 
 bool BindListenPort(const CService& addrBind, string& strError, bool fWhitelisted)
 {
@@ -1641,7 +1635,7 @@ bool BindListenPort(const CService& addrBind, string& strError, bool fWhiteliste
     if (::bind(hListenSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR) {
         int nErr = WSAGetLastError();
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to %s on this computer. PIVX Core is probably already running."), addrBind.ToString());
+            strError = strprintf(_("Unable to bind to %s on this computer. GoodCoin Core is probably already running."), addrBind.ToString());
         else
             strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %s)"), addrBind.ToString(), NetworkErrorString(nErr));
         LogPrintf("%s\n", strError);
@@ -1730,7 +1724,7 @@ void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler)
     CNode::SetBannedSetDirty(false); //no need to write down just read or nonexistent data
     CNode::SweepBanned(); //sweap out unused entries
 
-    // Initialize random numbers. Even when rand() is only usable for trivial use-cases most nodes should have a different
+    // Initialize random numbers. Even when rand() is only usable for trivial use-cases most nodes should have a different 
     // seed after all the file-IO done at this point. Should be good enough even when nodes are started via scripts.
     srand(time(NULL));
 
@@ -1776,11 +1770,9 @@ void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler)
     // Dump network addresses
     scheduler.scheduleEvery(&DumpData, DUMP_ADDRESSES_INTERVAL);
 
-#ifdef ENABLE_WALLET
     // ppcoin:mint proof-of-stake blocks in the background
-    if (GetBoolArg("-staking", true) && pwalletMain)
+    if (GetBoolArg("-staking", true))
         threadGroup.create_thread(boost::bind(&TraceThread<void (*)()>, "stakemint", &ThreadStakeMinter));
-#endif // ENABLE_WALLET
 }
 
 bool StopNode()
@@ -1897,7 +1889,7 @@ void RelayInv(CInv& inv)
 {
     LOCK(cs_vNodes);
     BOOST_FOREACH (CNode* pnode, vNodes){
-        if((pnode->nServices == NODE_BLOOM_WITHOUT_MN || pnode->nServices == NODE_BLOOM_LIGHT_ZC) && inv.IsMasterNodeType())continue;
+    		if((pnode->nServices==NODE_BLOOM_WITHOUT_MN) && inv.IsMasterNodeType())continue;
         if (pnode->nVersion >= ActiveProtocol())
             pnode->PushInventory(inv);
     }

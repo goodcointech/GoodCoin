@@ -1,0 +1,36 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/translations">
+        <file alias="bg">locale/goodcoin_bg.qm</file>
+        <file alias="ca">locale/goodcoin_ca.qm</file>
+        <file alias="cs">locale/goodcoin_cs.qm</file>
+        <file alias="da">locale/goodcoin_da.qm</file>
+        <file alias="de">locale/goodcoin_de.qm</file>
+        <file alias="en">locale/goodcoin_en.qm</file>
+        <file alias="en_US">locale/goodcoin_en_US.qm</file>
+        <file alias="eo">locale/goodcoin_eo.qm</file>
+        <file alias="es">locale/goodcoin_es.qm</file>
+        <file alias="es_ES">locale/goodcoin_es_ES.qm</file>
+        <file alias="fi">locale/goodcoin_fi.qm</file>
+        <file alias="fr_FR">locale/goodcoin_fr_FR.qm</file>
+        <file alias="hi_IN">locale/goodcoin_hi_IN.qm</file>
+        <file alias="hr">locale/goodcoin_hr.qm</file>
+        <file alias="hr_HR">locale/goodcoin_hr_HR.qm</file>
+        <file alias="it">locale/goodcoin_it.qm</file>
+        <file alias="ja">locale/goodcoin_ja.qm</file>
+        <file alias="ko_KR">locale/goodcoin_ko_KR.qm</file>
+        <file alias="lt_LT">locale/goodcoin_lt_LT.qm</file>
+        <file alias="nl">locale/goodcoin_nl.qm</file>
+        <file alias="pl">locale/goodcoin_pl.qm</file>
+        <file alias="pt">locale/goodcoin_pt.qm</file>
+        <file alias="pt_BR">locale/goodcoin_pt_BR.qm</file>
+        <file alias="ro_RO">locale/goodcoin_ro_RO.qm</file>
+        <file alias="ru">locale/goodcoin_ru.qm</file>
+        <file alias="sk">locale/goodcoin_sk.qm</file>
+        <file alias="sv">locale/goodcoin_sv.qm</file>
+        <file alias="tr">locale/goodcoin_tr.qm</file>
+        <file alias="uk">locale/goodcoin_uk.qm</file>
+        <file alias="vi">locale/goodcoin_vi.qm</file>
+        <file alias="zh_CN">locale/goodcoin_zh_CN.qm</file>
+        <file alias="zh_TW">locale/goodcoin_zh_TW.qm</file>
+    </qresource>
+</RCC>

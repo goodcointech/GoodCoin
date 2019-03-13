@@ -18,9 +18,12 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPixmap>
+#if QT_VERSION < 0x050000
+#include <QUrl>
+#endif
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h" /* for USE_QRCODE */
+#include "config/goodcoin-config.h" /* for USE_QRCODE */
 #endif
 
 #ifdef USE_QRCODE

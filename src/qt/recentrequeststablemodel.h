@@ -54,7 +54,7 @@ private:
     Qt::SortOrder order;
 };
 
-/** Model for list of recently generated payment requests / pivx: URIs.
+/** Model for list of recently generated payment requests / goodcoin: URIs.
  * Part of wallet model.
  */
 class RecentRequestsTableModel : public QAbstractTableModel
@@ -68,9 +68,8 @@ public:
     enum ColumnIndex {
         Date = 0,
         Label = 1,
-        Address = 2,
-        Message = 3,
-        Amount = 4,
+        Message = 2,
+        Amount = 3,
         NUMBER_OF_COLUMNS
     };
 

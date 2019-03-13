@@ -14,6 +14,7 @@
 #include "net.h"
 #include "sync.h"
 #include "util.h"
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
@@ -367,9 +368,9 @@ public:
         return true;
     }
 
-    // Verify and vote on finalized budget
-    void CheckAndVote();
-    //total pivx paid out by this budget
+    //check to see if we should vote on this
+    void AutoCheck();
+    //total goodcoin paid out by this budget
     CAmount GetTotalPayout();
     //vote on this finalized budget as a masternode
     void SubmitVote();
@@ -515,16 +516,16 @@ public:
     int GetBlockCurrentCycle();
     int GetBlockEndCycle();
     double GetRatio();
-    int GetYeas() const;
-    int GetNays() const;
-    int GetAbstains() const;
+    int GetYeas();
+    int GetNays();
+    int GetAbstains();
     CAmount GetAmount() { return nAmount; }
     void SetAllotted(CAmount nAllotedIn) { nAlloted = nAllotedIn; }
     CAmount GetAllotted() { return nAlloted; }
 
     void CleanAndRemove(bool fSignatureCheck);
 
-    uint256 GetHash() const
+    uint256 GetHash()
     {
         CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
         ss << strProposalName;

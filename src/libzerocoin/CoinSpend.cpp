@@ -57,7 +57,7 @@ namespace libzerocoin
 
     // Now generate the two core ZK proofs:
     // 3. Proves that the committed public coin is in the Accumulator (PoK of "witness")
-    this->accumulatorPoK = AccumulatorProofOfKnowledge(&paramsAcc->accumulatorParams, fullCommitmentToCoinUnderAccParams, witness);
+    this->accumulatorPoK = AccumulatorProofOfKnowledge(&paramsAcc->accumulatorParams, fullCommitmentToCoinUnderAccParams, witness, a);
 
     // 4. Proves that the coin is correct w.r.t. serial number and hidden coin secret
     // (This proof is bound to the coin 'metadata', i.e., transaction hash)
@@ -150,16 +150,6 @@ CBigNum CoinSpend::CalculateValidSerial(ZerocoinParams* params)
     CBigNum bnSerial = coinSerialNumber;
     bnSerial = bnSerial.mul_mod(CBigNum(1),params->coinCommitmentGroup.groupOrder);
     return bnSerial;
-}
-
-std::vector<unsigned char> CoinSpend::ParseSerial(CDataStream& s) {
-    unsigned int nSize = ReadCompactSize(s);
-    s.movePos(nSize);
-    nSize = ReadCompactSize(s);
-    s.movePos(nSize);
-    CBigNum coinSerialNumber;
-    s >> coinSerialNumber;
-    return coinSerialNumber.getvch();
 }
 
 } /* namespace libzerocoin */

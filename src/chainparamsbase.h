@@ -10,8 +10,8 @@
 #include <vector>
 
 /**
- * CBaseChainParams defines the base parameters (shared between pivx-cli and pivxd)
- * of a given instance of the Pivx system.
+ * CBaseChainParams defines the base parameters (shared between goodcoin-cli and goodcoind)
+ * of a given instance of the GoodCoin system.
  */
 class CBaseChainParams
 {

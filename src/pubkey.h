@@ -4,8 +4,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef PIVX_PUBKEY_H
-#define PIVX_PUBKEY_H
+#ifndef GoodCoin_PUBKEY_H
+#define GoodCoin_PUBKEY_H
 
 #include "hash.h"
 #include "serialize.h"
@@ -204,6 +204,11 @@ public:
         return std::vector<unsigned char>(vch, vch + size());
     }
 
+    std::string GetHex()
+    {
+        std::string my_std_string(reinterpret_cast<const char*>(vch), 65);
+        return my_std_string;
+    }
 };
 
 struct CExtPubKey {
@@ -263,4 +268,4 @@ public:
     ~ECCVerifyHandle();
 };
 
-#endif // PIVX_PUBKEY_H
+#endif // GoodCoin_PUBKEY_H
